@@ -23,7 +23,8 @@ type atOp struct {
 func (op atOp) Arity() int { return 1 }
 
 // atOp has this type
-//		op :: Tensor a → a
+//
+//	op :: Tensor a → a
 func (op atOp) Type() hm.Type {
 	a := hm.TypeVariable('a')
 	tt := makeTensorType(op.d, a)
@@ -75,7 +76,8 @@ type sizeOp struct {
 func (op sizeOp) Arity() int { return 1 }
 
 // sizeOp is a function with this type:
-//		sizeOp :: Tensor d a → a
+//
+//	sizeOp :: Tensor d a → a
 func (op sizeOp) Type() hm.Type {
 	a := hm.TypeVariable('a')
 
@@ -190,8 +192,10 @@ func repeatedApply(along []int, children Nodes) (retVal *Node, err error) {
 func (op repeatOp) Arity() int { return 2 }
 
 // repeat is defined as one of the following:
-//		repeat :: Tensor-n a → a → Tensor-n a
-//		repeat :: a → Vector a
+//
+//	repeat :: Tensor-n a → a → Tensor-n a
+//	repeat :: a → Vector a
+//
 // The end result must have the same dimensions as the input
 func (op repeatOp) Type() hm.Type {
 
@@ -494,8 +498,9 @@ func newSliceOp(s tensor.Slice, along, d int) *sliceOp {
 func (op *sliceOp) Arity() int { return 1 }
 
 // slicing a tensor value T[:] has type
-// 		slice :: Tensor a → Tensor a
-// 		slice :: Tensor a → a
+//
+//	slice :: Tensor a → Tensor a
+//	slice :: Tensor a → a
 //
 // The latter is in the case where the resulting dimensions is 0, returning a scalar
 func (op *sliceOp) Type() hm.Type {
@@ -582,15 +587,17 @@ func (op *sliceOp) Do(inputs ...Value) (retVal Value, err error) {
 	}
 
 	t := inputs[0]
-	// prep the slices
-	var slices []tensor.Slice
-	slices = make([]tensor.Slice, len(t.Shape()))
 
-	if !op.all() {
-		slices[op.along] = op
-	}
 	switch T := t.(type) {
 	case tensor.Tensor:
+		// prep the slices
+		var slices []tensor.Slice
+		slices = make([]tensor.Slice, len(t.Shape()))
+
+		if !op.all() {
+			slices[op.along] = op
+		}
+
 		var v tensor.Tensor
 		if v, err = T.Slice(slices...); err != nil {
 			return nil, errors.Wrapf(err, sliceFail, slices)
@@ -601,6 +608,9 @@ func (op *sliceOp) Do(inputs ...Value) (retVal Value, err error) {
 			retVal = v.(tensor.View).Materialize()
 		}
 	case Scalar:
+		if op.Slice.Start() == 0 && op.Slice.End() == 1 {
+			return t, nil
+		}
 		return nil, errors.New("Cannot slice a scalar value")
 	default:
 		return nil, errors.Errorf(nyiFail, "sliceOp.Do()", t)
@@ -667,7 +677,8 @@ type sliceIncrOp struct {
 }
 
 // slicing a tensor value T[:] has type
-// 		slice :: Tensor a → b → Tensor a
+//
+//	slice :: Tensor a → b → Tensor a
 //
 // b can be a or Vector a
 func (op sliceIncrOp) Type() hm.Type {
@@ -866,7 +877,8 @@ type transposeOp struct {
 func (op transposeOp) Arity() int { return 1 }
 
 // transposing a tensor has type
-// 		transpose :: Tensor a → Tensor a
+//
+//	transpose :: Tensor a → Tensor a
 func (op transposeOp) Type() hm.Type {
 	a := hm.TypeVariable('a')
 	tt := makeTensorType(op.d, a)
@@ -1000,7 +1012,8 @@ type concatOp struct {
 func (op concatOp) Arity() int { return -1 }
 
 // concat only works for Tensor types
-//		concat :: Tensor a → Tensor a → ... → Tensor a
+//
+//	concat :: Tensor a → Tensor a → ... → Tensor a
 func (op concatOp) Type() hm.Type {
 	tt := makeTensorType(op.d, hm.TypeVariable('a'))
 	fnt := make([]hm.Type, op.children+1)
